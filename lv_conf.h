@@ -693,7 +693,9 @@
 #define LV_USE_VECTOR_GRAPHIC  1
 
 /* Enable ThorVG (vector graphics library) from the src/libs folder */
-#define LV_USE_THORVG_INTERNAL 1
+#ifndef LV_USE_THORVG_INTERNAL
+#define LV_USE_THORVG_INTERNAL 0
+#endif // LV_USE_THORVG_INTERNAL
 
 /* Enable ThorVG by assuming that its installed and linked to the project */
 #define LV_USE_THORVG_EXTERNAL 0
@@ -829,7 +831,9 @@
  *==================*/
 
 /*Use SDL to open window on PC and handle mouse and keyboard*/
+#ifndef LV_USE_SDL
 #define LV_USE_SDL              0
+#endif // LV_USE_SDL
 #if LV_USE_SDL
     #define LV_SDL_INCLUDE_PATH    <SDL2/SDL.h>
     #define LV_SDL_RENDER_MODE     LV_DISPLAY_RENDER_MODE_DIRECT   /*LV_DISPLAY_RENDER_MODE_DIRECT is recommended for best performance*/
@@ -850,7 +854,9 @@
 #endif
 
 /*Driver for /dev/fb*/
+#ifndef LV_USE_LINUX_FBDEV
 #define LV_USE_LINUX_FBDEV      1
+#endif // LV_USE_LINUX_FBDEV
 #if LV_USE_LINUX_FBDEV
     #define LV_LINUX_FBDEV_BSD           0
     #define LV_LINUX_FBDEV_RENDER_MODE   LV_DISPLAY_RENDER_MODE_DIRECT
@@ -880,7 +886,9 @@
 #endif
 
 /*Driver for /dev/dri/card*/
+#ifndef LV_USE_LINUX_DRM
 #define LV_USE_LINUX_DRM        0
+#endif // LV_USE_LINUX_DRM
 
 /*Interface for TFT_eSPI*/
 #define LV_USE_TFT_ESPI         0
