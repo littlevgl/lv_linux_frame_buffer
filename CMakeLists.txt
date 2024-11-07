@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(lvgl)
 
-foreach(BACKEND_NAME "SDL" "LINUX_DRM" "LINUX_FBDEV" "X11" "WAYLAND")
+foreach(BACKEND_NAME "SDL" "LINUX_DRM" "LINUX_FBDEV" "X11" "WAYLAND" "OPENGLES")
     execute_process(COMMAND "scripts/backend_conf.sh" ${BACKEND_NAME} OUTPUT_VARIABLE IS_BACKEND_ENABLED)
     set("LV_USE_${BACKEND_NAME}" ${IS_BACKEND_ENABLED})
 endforeach()
@@ -14,7 +14,10 @@ set(CMAKE_CXX_STANDARD 17) #C17
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 add_subdirectory(lvgl)
-target_include_directories(lvgl PUBLIC ${PROJECT_SOURCE_DIR})
+
+target_include_directories(lvgl PUBLIC ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src)
+
+file(GLOB SIM_SRC src/*.c)
 
 if (LV_USE_LINUX_DRM)
 
@@ -22,7 +25,7 @@ if (LV_USE_LINUX_DRM)
     pkg_check_modules(LIBDRM REQUIRED libdrm)
 
     target_include_directories(lvgl PUBLIC ${LIBDRM_INCLUDE_DIRS})
-    add_executable(lvglsim main.c mouse_cursor_icon.c)
+    add_executable(lvglsim ${SIM_SRC} src/backends/drm.c)
     target_link_libraries(lvglsim lvgl lvgl::examples lvgl::demos lvgl::thorvg ${LIBDRM_LIBRARIES} m pthread)
 
 elseif (LV_USE_SDL)
@@ -33,7 +36,7 @@ elseif (LV_USE_SDL)
 
     target_include_directories(lvgl PRIVATE ${SDL2_INCLUDE_DIRS})
     target_include_directories(lvgl PRIVATE ${SDL2_IMAGE_INCLUDE_DIRS})
-    add_executable(lvglsim main.c mouse_cursor_icon.c)
+    add_executable(lvglsim ${SIM_SRC} src/backends/sdl.c)
     target_link_libraries(lvglsim lvgl lvgl::examples lvgl::demos lvgl::thorvg ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} m pthread)
 
 elseif (LV_USE_WAYLAND)
@@ -51,17 +54,27 @@ elseif (LV_USE_WAYLAND)
 
     target_include_directories(lvgl PRIVATE ${PROJECT_SOURCE_DIR}
                                             "${PROJECT_SOURCE_DIR}/wl_protocols")
-    add_executable(lvglsim main.c ${WAYLAND_PROTOCOLS_SRC} 
-        mouse_cursor_icon.c backends/wayland.c)
+    add_executable(lvglsim ${SIM_SRC} ${WAYLAND_PROTOCOLS_SRC} src/backends/wayland.c)
     target_compile_definitions(lvglsim PRIVATE LV_CONF_INCLUDE_SIMPLE)
     target_link_libraries(lvglsim lvgl lvgl::examples lvgl::demos lvgl::thorvg m
         wayland-client wayland-cursor xkbcommon)
 
-else()
+elseif (LV_USE_LINUX_FBDEV)
 
     # No specific build steps required for FBDEV
-    add_executable(lvglsim main.c mouse_cursor_icon.c)
+    add_executable(lvglsim ${SIM_SRC} src/backends/fbdev.c)
     target_link_libraries(lvglsim lvgl lvgl::examples lvgl::demos lvgl::thorvg m pthread)
+
+elseif (LV_USE_OPENGLES)
+
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GLFW3 REQUIRED glfw3)
+    pkg_check_modules(GLEW REQUIRED glew)
+
+    add_executable(lvglsim ${SIM_SRC} src/backends/glfw3.c)
+    target_link_libraries(lvglsim lvgl lvgl::examples lvgl::demos lvgl::thorvg
+        m pthread ${GLFW3_LIBRARIES} ${GLEW_LIBRARIES})
+
 endif()
 
 add_custom_target (run COMMAND ${EXECUTABLE_OUTPUT_PATH}/lvglsim DEPENDS lvglsim)
